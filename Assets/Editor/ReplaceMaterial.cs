@@ -27,8 +27,17 @@ public class ReplaceMaterial : EditorWindow
         rootObject = EditorGUILayout.ObjectField("RootObj",rootObject,typeof(GameObject),true) as GameObject;
         if(GUILayout.Button("Replace Object Material",GUILayout.Width(300)))
         {
-            if(AssertResource()) Replace(rootObject);
-            resultMatDic.Clear();
+            if(AssertResource()) 
+            {
+                Replace(rootObject);
+                foreach (var item in resultMatDic)
+                {
+                    AssetDatabase.CreateAsset(item.Value,$"Assets/Resources/Material/SponzaMaterial/{item.Value.name}.mat");
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+                resultMatDic.Clear();
+            }
         }
 
         GUILayout.EndVertical();
@@ -39,17 +48,20 @@ public class ReplaceMaterial : EditorWindow
         
     }
 
+List<Material> sharedMatList = new List<Material>(16);
     private void Replace(GameObject root)
     {
         var meshRender = root.GetComponent<MeshRenderer>();
         if(meshRender)
         { 
             var matList = meshRender.sharedMaterials;
+            sharedMatList.Clear();
             for(int i = 0; i<matList.Length;i++)
             {
                 if(resultMatDic.ContainsKey(matList[i].name))
                 {
-                    meshRender.materials[i] = resultMatDic[matList[i].name];
+                    meshRender.sharedMaterials[i] = resultMatDic[matList[i].name];
+                    sharedMatList.Add(resultMatDic[matList[i].name]);
                 }
                 else
                 {
@@ -64,15 +76,18 @@ public class ReplaceMaterial : EditorWindow
                     {
                         Debug.Log("fzy name:"+mainTexName);
                     }
-                    //var mat = new Material(Shader.Find(""));
-                    //mat.SetTexture
-                    //meshRender.materials[i] = mat;
-                    //resultMatDic.Add(matList[i].name,mat);
+                    var mat = new Material(Shader.Find("Unlit/Texture"));
+                    mat.name = meshRender.sharedMaterials[i].name;
+                    mat.SetTexture("_MainTex",mainTex);
+                    //meshRender.sharedMaterials[i] = mat;
+                    sharedMatList.Add(mat);
+                    resultMatDic.Add(matList[i].name,mat);
                 }
                 //var tt = m.mainTexture;
                 //var t = m.GetTexture("_MainTex");
                 //Debug.Log("fzy "+m.name+" ,"+t.name+" ,"+tt.name);
             }
+            meshRender.sharedMaterials = sharedMatList.ToArray();
         }
         var count = root.transform.childCount;
         for(int i=0;i<count;i++)
