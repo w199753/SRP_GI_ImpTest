@@ -76,7 +76,7 @@ List<Material> sharedMatList = new List<Material>(16);
                     {
                         Debug.Log("fzy name:"+mainTexName);
                     }
-                    var mat = new Material(Shader.Find("Unlit/Texture"));
+                    var mat = new Material(Shader.Find("FRP/Default"));
                     mat.name = meshRender.sharedMaterials[i].name;
                     mat.SetTexture("_MainTex",mainTex);
                     //meshRender.sharedMaterials[i] = mat;

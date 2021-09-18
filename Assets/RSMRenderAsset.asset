@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51886ccb7ab4a5f41ad9309cf3d35f93, type: 3}
   m_Name: RSMRenderAsset
   m_EditorClassIdentifier: 
+  RSM_Resolution: 1024

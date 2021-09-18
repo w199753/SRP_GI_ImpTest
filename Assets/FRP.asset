@@ -12,3 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96c5fbe7e85a874b8aa7cbda4dbcb17, type: 3}
   m_Name: FRP
   m_EditorClassIdentifier: 
+  renderSetting:
+    GI_Type: 3
+    renderAssetBase: {fileID: 11400000, guid: 45e42b1bc21f9454780635336bfbf53a, type: 2}

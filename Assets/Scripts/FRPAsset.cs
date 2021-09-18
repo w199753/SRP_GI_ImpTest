@@ -25,8 +25,21 @@ public class FRPAsset : RenderPipelineAsset
 {
     [SerializeField]
     public FRenderSetting renderSetting;
+    private Lazy<Shader> m_defaultShader = new Lazy<Shader>(()=>Shader.Find("FRP/Default"));
+    private Material m_defualtMaterial;
     protected override RenderPipeline CreatePipeline()
     {
         return new FRP(renderSetting);
+    }
+
+    public override Material defaultMaterial
+    {
+        get{
+            if(m_defualtMaterial == null)
+            {
+                m_defualtMaterial = new Material(m_defaultShader.Value);
+            }
+            return m_defualtMaterial;
+        }
     }
 }

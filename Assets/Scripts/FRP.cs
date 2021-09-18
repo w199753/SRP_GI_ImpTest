@@ -59,13 +59,6 @@ public class FRP : RenderPipeline
 
         Setup(context, camera, ref renderingData);
 
-        if(renderSettings.renderAssetBase)
-        {
-            var pass = renderSettings.renderAssetBase.GetRenderPass(camera);
-            pass.Setup(context,camera,renderingData);
-            pass.Render();
-        }
-
         var cmd = CommandBufferPool.Get(camera.name);
         cmd.Clear();
         cmd.SetRenderTarget(ColorTarget, DepthTarget);
@@ -75,10 +68,21 @@ public class FRP : RenderPipeline
         cmd.SetRenderTarget(ColorTarget, DepthTarget);
         context.ExecuteCommandBuffer(cmd);
         cmd.Clear();
-
+        
         context.DrawSkybox(camera);
-
+        
         PreRenderPass.Instance.ExecuteRender(ref context,camera,ref renderingData);
+
+        if(renderSettings.renderAssetBase)
+        {
+            var pass = renderSettings.renderAssetBase.GetRenderPass(camera);
+            pass.Setup(context,camera,renderingData);
+            pass.Render();
+        }
+
+
+
+
         //PreRenderPass.Instance.Render();
         // foreach (var pass in m_renderPassQueue)
         // {
