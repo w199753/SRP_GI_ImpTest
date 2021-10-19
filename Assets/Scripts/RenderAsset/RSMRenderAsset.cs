@@ -111,17 +111,68 @@ public class RSMRenderPass : FRenderPassRender
         cameraCorner.Far[1] = cameraLocal2World.MultiplyPoint(new Vector3(-unitWidth,unitHeight,1)*far);
         cameraCorner.Far[2] = cameraLocal2World.MultiplyPoint(new Vector3(unitWidth,unitHeight,1)*far);
         cameraCorner.Far[3] = cameraLocal2World.MultiplyPoint(new Vector3(unitWidth,-unitHeight,1)*far);
-DrawAABB(cameraCorner);
-        cameraCorner.Near[0] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[0]);
-        cameraCorner.Near[1] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[1]);
-        cameraCorner.Near[2] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[2]);
-        cameraCorner.Near[3] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[3]);
-        cameraCorner.Far[0] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[0]);
-        cameraCorner.Far[1] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[1]);
-        cameraCorner.Far[2] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[2]);
-        cameraCorner.Far[3] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[3]);
+// DrawAABB(cameraCorner);
+        var cameraBounds = GetBoundingBox(cameraCorner,dirLight.transform.worldToLocalMatrix);
+        DrawAABB(cameraBounds,dirLight.transform.localToWorldMatrix);
+        // cameraCorner.Near[0] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[0]);
+        // cameraCorner.Near[1] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[1]);
+        // cameraCorner.Near[2] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[2]);
+        // cameraCorner.Near[3] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Near[3]);
+        // cameraCorner.Far[0] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[0]);
+        // cameraCorner.Far[1] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[1]);
+        // cameraCorner.Far[2] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[2]);
+        // cameraCorner.Far[3] = dirLight.transform.worldToLocalMatrix.MultiplyPoint(cameraCorner.Far[3]);
         //DrawAABB(cameraCorner,dirLight.transform.localToWorldMatrix);
         //Utility.DrawBound(bounds,Color.red);
+    }
+
+    private FrustumCorner GetBoundingBox(FrustumCorner c,Matrix4x4 mat)
+    {
+        FrustumCorner res = new FrustumCorner();
+        res.Near[0] = new Vector3(999,999,999);
+        res.Near[1] = new Vector3(999,-999,999);
+        res.Near[2] = new Vector3(-999,-999,999);
+        res.Near[3] = new Vector3(-999,999,999);
+        res.Far[0] = new Vector3(999,999,-999);
+        res.Far[1] = new Vector3(999,-999,-999);
+        res.Far[2] = new Vector3(-999,-999,-999);
+        res.Far[3] = new Vector3(-999,999,-999);
+
+        float minX = 999;
+        float minY = 999;
+        float minZ = 999;
+        float maxX = -999;
+        float maxY = -999;
+        float maxZ = -999;
+        for(int i=0;i<4;i++)
+        {
+            minX = Mathf.Min(minX,mat.MultiplyPoint(c.Near[i]).x);
+            minY = Mathf.Min(minY,mat.MultiplyPoint(c.Near[i]).y);
+            minZ = Mathf.Min(minZ,mat.MultiplyPoint(c.Near[i]).z);
+
+            maxX = Mathf.Max(maxX,mat.MultiplyPoint(c.Near[i]).x);
+            maxY = Mathf.Max(maxY,mat.MultiplyPoint(c.Near[i]).y);
+            maxZ = Mathf.Max(maxZ,mat.MultiplyPoint(c.Near[i]).z);
+        }
+        for(int i=0;i<4;i++)
+        {
+            minX = Mathf.Min(minX,mat.MultiplyPoint(c.Far[i]).x);
+            minY = Mathf.Min(minY,mat.MultiplyPoint(c.Far[i]).y);
+            minZ = Mathf.Min(minZ,mat.MultiplyPoint(c.Far[i]).z);
+
+            maxX = Mathf.Max(maxX,mat.MultiplyPoint(c.Far[i]).x);
+            maxY = Mathf.Max(maxY,mat.MultiplyPoint(c.Far[i]).y);
+            maxZ = Mathf.Max(maxZ,mat.MultiplyPoint(c.Far[i]).z);
+        }
+        res.Near[0] =new Vector3(minX,minY,minZ);
+        res.Near[1] =new Vector3(minX,maxY,minZ);
+        res.Near[2] =new Vector3(maxX,maxY,minZ);
+        res.Near[3] =new Vector3(maxX,minY,minZ);
+        res.Far[0] =new Vector3(minX,minY,maxZ);
+        res.Far[1] =new Vector3(minX,maxY,maxZ);
+        res.Far[2] =new Vector3(maxX,maxY,maxZ);
+        res.Far[3] =new Vector3(maxX,minY,maxZ);
+        return res;
     }
         private void DrawAABB(FrustumCorner debugCor)
         {
