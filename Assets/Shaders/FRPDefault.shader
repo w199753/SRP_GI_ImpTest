@@ -21,5 +21,19 @@
 
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "FRP_Caster_RSM"
+            Tags{"LightMode" = "FRP_Caster_RSM"}
+            HLSLPROGRAM
+            #include "./FRP_RSM.hlsl"
+            
+            #pragma vertex vert_shadow
+            #pragma fragment frag_sm
+
+
+            ENDHLSL
+        }
     }
 }
