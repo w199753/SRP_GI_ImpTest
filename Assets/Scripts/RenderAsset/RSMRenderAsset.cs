@@ -38,13 +38,18 @@ public class RSMRenderPass : FRenderPassRender
         public int ShadowMap_Tex;
         public int ShadowMap_VP;
 
-        public int ShadowMap_Temp;
+        public int Rsm_Flux;
+        public int Rsm_WorldPos;
+        public int Rsm_WorldNormal;
+
 
         public ShaderPropertyID()
         {
             ShadowMap_Tex = Shader.PropertyToID("_ShadowMapTex");
             ShadowMap_VP = Shader.PropertyToID("_ShadowMapVP");
-            ShadowMap_Temp = Shader.PropertyToID("ShadowMap_Temp");
+            Rsm_Flux = Shader.PropertyToID("_RsmFlux");
+            Rsm_WorldPos = Shader.PropertyToID("_RsmWorldPos");
+            Rsm_WorldNormal = Shader.PropertyToID("_RsmWorldNormal");
         }
     }
 
@@ -68,7 +73,11 @@ public class RSMRenderPass : FRenderPassRender
     private FrustumCorner lightCorner = new FrustumCorner();
     private FrustumCorner casterCorner = new FrustumCorner();
 
-    public const int RESOLUTION = 1024;
+    RenderTextureDescriptor shadowMapDesc = new RenderTextureDescriptor();
+    RenderTextureDescriptor fluxDesc = new RenderTextureDescriptor();
+    RenderTextureDescriptor normalDesc = new RenderTextureDescriptor();
+    RenderTextureDescriptor worldPosDesc = new RenderTextureDescriptor();
+
 
     public override void Render()
     {
@@ -81,9 +90,9 @@ public class RSMRenderPass : FRenderPassRender
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
 
-        DrawRender();
         PrePareShadowMap();
         PrePareReflectiveShadowMap();
+        DrawRender();
 
 
         buffer.EndSample(BUFFER_NAME);
@@ -165,15 +174,18 @@ public class RSMRenderPass : FRenderPassRender
             cameraCorner.Near[j] = cameraLocal2World.MultiplyPoint(pNear);
             cameraCorner.Far[j] = cameraLocal2World.MultiplyPoint(pFar);
         }
+        shadowMapDesc = ConfigRTDescriptor(shadowMapDesc,renderAsset.RSM_Resolution,renderAsset.RSM_Resolution,GraphicsFormat.R32G32B32A32_SFloat,32);
+        buffer.GetTemporaryRT(shaderPropertyID.ShadowMap_Tex, shadowMapDesc, FilterMode.Point);
+        
+        fluxDesc = ConfigRTDescriptor(fluxDesc,renderAsset.RSM_Resolution,renderAsset.RSM_Resolution,GraphicsFormat.R32G32B32A32_SFloat,32);
+        buffer.GetTemporaryRT(shaderPropertyID.Rsm_Flux, fluxDesc, FilterMode.Bilinear);
 
-        RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor(RESOLUTION, RESOLUTION, GraphicsFormat.R32G32B32A32_SFloat, 32);
-        renderTextureDescriptor.useMipMap = false;
-        renderTextureDescriptor.autoGenerateMips = false;
-        //renderTextureDescriptor.mipCount = 12;
-        renderTextureDescriptor.dimension = TextureDimension.Tex2DArray;
-        renderTextureDescriptor.volumeDepth = 4;
-        renderTextureDescriptor.enableRandomWrite = false;
-        buffer.GetTemporaryRT(shaderPropertyID.ShadowMap_Tex, renderTextureDescriptor, FilterMode.Point);
+        normalDesc = ConfigRTDescriptor(normalDesc,renderAsset.RSM_Resolution,renderAsset.RSM_Resolution,GraphicsFormat.R32G32B32A32_SFloat,32);
+        buffer.GetTemporaryRT(shaderPropertyID.Rsm_WorldNormal,normalDesc,FilterMode.Bilinear);
+
+        worldPosDesc = ConfigRTDescriptor(worldPosDesc,renderAsset.RSM_Resolution,renderAsset.RSM_Resolution,GraphicsFormat.R32G32B32A32_SFloat,32);
+        buffer.GetTemporaryRT(shaderPropertyID.Rsm_WorldPos,worldPosDesc,FilterMode.Bilinear);
+
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
 
@@ -213,10 +225,10 @@ public class RSMRenderPass : FRenderPassRender
             lightCorner.Far[idx] = ff[idx];
         }
 
-         for (int idx = 0; idx < 4; idx++)
-         {
-             lightCorner.Near[idx] = nn[idx];
-             lightCorner.Near[idx] = SplitMatrix.inverse.MultiplyPoint(casterBoundVerts.Near[idx]);
+        for (int idx = 0; idx < 4; idx++)
+        {
+            lightCorner.Near[idx] = nn[idx];
+            lightCorner.Near[idx] = SplitMatrix.inverse.MultiplyPoint(casterBoundVerts.Near[idx]);
             //  if (D2 - D1 > 0)
             //  {
             //      lightCorner.Near[idx].z = nn[idx].z - dis;
@@ -225,10 +237,10 @@ public class RSMRenderPass : FRenderPassRender
             //  {
             //      lightCorner.Near[idx].z = nn[idx].z + dis;
             //  }
-         }
+        }
         //lightCorner.Near=casterBoundVerts.Near;
         //Debug.Log("d:"+D2+" "+D1+" "+dis);
-    //DrawAABB(lightCorner);
+        //DrawAABB(lightCorner);
         var center = PixelAlignment(maxDist, lightCorner);
         SplitRotate = dirLight.transform.rotation;
         SplitPosition = SplitMatrix.MultiplyPoint(center);
@@ -238,12 +250,26 @@ public class RSMRenderPass : FRenderPassRender
         t.m22 = -1;
         viewMatrix = t * viewMatrix;
 
-        Debug.Log(maxDist + " " + lightCorner.Near[0].z + " " + lightCorner.Far[0].z + " " + SplitPosition + " " + center);
+        //Debug.Log(maxDist + " " + lightCorner.Near[0].z + " " + lightCorner.Far[0].z + " " + SplitPosition + " " + center);
         var project = Matrix4x4.Ortho(-maxDist * 0.5f, maxDist * 0.5f, -maxDist * 0.5f, maxDist * 0.5f, lightCorner.Near[0].z, lightCorner.Far[0].z);
         buffer.SetViewProjectionMatrices(viewMatrix, project);
 
-        DrawShadows(project, viewMatrix);
+        CullingResults m_cullingResults = new CullingResults();
+        if (camera.TryGetCullingParameters(out ScriptableCullingParameters cullParam))
+        {
+            cullParam.isOrthographic = true;
+            for (int i = 0; i < cullParam.cullingPlaneCount; i++)
+            {
+                cullParam.SetCullingPlane(i, GetCullingPlane(i));
+                //cullParam.SetCullingPlane(i, new Plane(new Vector3(0, 1, 0), new Vector3()));
+            }
+            m_cullingResults = context.Cull(ref cullParam);
+        }
 
+        DrawShadows(project, viewMatrix,m_cullingResults);
+        DrawFlux(m_cullingResults);
+        DrawNormal(m_cullingResults);
+        DrawWorldPos(m_cullingResults);
         //DD();
         //buffer.SetGlobalInt(shaderPropertyID.smType, (int)settings.shadowSetting.shadowType);
         //buffer.SetGlobalVector(shaderPropertyID.smSplitNears, new Vector4(nears[0], nears[1], nears[2], nears[3]));
@@ -251,6 +277,9 @@ public class RSMRenderPass : FRenderPassRender
         //buffer.SetGlobalMatrixArray(shaderPropertyID.smVPArray, vpArray);
         //buffer.SetGlobalTexture(shaderPropertyID.smShadowMap, smid);
         buffer.ReleaseTemporaryRT(shaderPropertyID.ShadowMap_Tex);
+        buffer.ReleaseTemporaryRT(shaderPropertyID.Rsm_Flux);
+        buffer.ReleaseTemporaryRT(shaderPropertyID.Rsm_WorldNormal);
+        buffer.ReleaseTemporaryRT(shaderPropertyID.Rsm_WorldPos);
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
 
@@ -260,26 +289,10 @@ public class RSMRenderPass : FRenderPassRender
         buffer.Clear();
     }
 
-    private void DrawShadows(Matrix4x4 project, Matrix4x4 viewMatrix)
+    private void DrawShadows(Matrix4x4 project, Matrix4x4 viewMatrix,CullingResults m_cullingResults)
     {
-        CullingResults m_cullingResults = new CullingResults();
-        if (camera.TryGetCullingParameters(out ScriptableCullingParameters cullParam))
-        {
-            cullParam.isOrthographic = true;
-            for (int i = 0; i < cullParam.cullingPlaneCount; i++)
-            {
-                //cullParam.SetCullingPlane(i, GetCullingPlane(i));
-                cullParam.SetCullingPlane(i, new Plane(new Vector3(0, 1, 0), new Vector3()));
-            }
-            m_cullingResults = context.Cull(ref cullParam);
-        }
-        RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor(RESOLUTION, RESOLUTION, GraphicsFormat.R32G32B32A32_SFloat, 32);
-        renderTextureDescriptor.useMipMap = true;
-        renderTextureDescriptor.autoGenerateMips = true;
-        renderTextureDescriptor.mipCount = (int)Mathf.Log(RESOLUTION, 2) + 1;
-        buffer.GetTemporaryRT(shaderPropertyID.ShadowMap_Temp, renderTextureDescriptor, FilterMode.Point);
-        //buffer.GetTemporaryRT(shaderPropertyID.smTempDepth, settings.shadowSetting.shadowResolution, settings.shadowSetting.shadowResolution, 32, FilterMode.Point, GraphicsFormat.R32G32B32A32_SFloat);
-        buffer.SetRenderTarget(shaderPropertyID.ShadowMap_Temp, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+
+        buffer.SetRenderTarget(shaderPropertyID.ShadowMap_Tex, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
         buffer.ClearRenderTarget(true, true, Color.clear);
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
@@ -291,8 +304,7 @@ public class RSMRenderPass : FRenderPassRender
         RenderStateBlock stateBlock = new RenderStateBlock(RenderStateMask.Nothing);
 
         // drawingSettings.SetShaderPassName(0, new ShaderTagId("FRP_ShadowCaster_SM"));
-        drawingSettings.SetShaderPassName(0, new ShaderTagId("FRP_Caster_RSM"));
-        buffer.CopyTexture(shaderPropertyID.ShadowMap_Temp, 0, 0, shaderPropertyID.ShadowMap_Tex, 0, 0);
+        drawingSettings.SetShaderPassName(0, new ShaderTagId("FRP_Caster_Shadow"));
 
         sortingSettings.criteria = SortingCriteria.RenderQueue;
         drawingSettings.sortingSettings = sortingSettings;
@@ -307,11 +319,37 @@ public class RSMRenderPass : FRenderPassRender
         //buffer.ClearRenderTarget(true, true, Color.clear);
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
-        buffer.ReleaseTemporaryRT(shaderPropertyID.ShadowMap_Temp);
 
-        context.ExecuteCommandBuffer(buffer);
-        buffer.Clear();
+    }
 
+    private void DrawFlux(CullingResults m_cullingResults)
+    {
+
+    }
+
+    private void DrawNormal(CullingResults m_cullingResults)
+    {
+
+    }
+
+    private void DrawWorldPos(CullingResults m_cullingResults)
+    {
+
+    }
+
+
+
+    private RenderTextureDescriptor ConfigRTDescriptor(RenderTextureDescriptor descriptor,int width,int height,GraphicsFormat format,int depthBits,TextureDimension dimension = TextureDimension.Tex2D)
+    {
+        descriptor.width = width;
+        descriptor.height = height;
+        descriptor.graphicsFormat = format;
+        descriptor.depthBufferBits = depthBits;
+        descriptor.useMipMap = false;
+        descriptor.autoGenerateMips = false;
+        descriptor.msaaSamples = 1;
+        descriptor.dimension = dimension;
+        return descriptor;
     }
 
     private Vector3 GetPlaneNormal(Vector3 p0, Vector3 p1, Vector3 p2)
@@ -468,7 +506,7 @@ public class RSMRenderPass : FRenderPassRender
         float minY = cameraBounds.Near[0].y;
         float maxY = cameraBounds.Near[2].y;
         float minZ = cameraBounds.Near[0].z;
-        float unitPerTex = maxDist / (float)RESOLUTION;
+        float unitPerTex = maxDist / (float)renderAsset.RSM_Resolution;
         var posx = (minX + maxX) * 0.5f;
         posx /= unitPerTex;
         posx = Mathf.FloorToInt(posx);
@@ -535,8 +573,13 @@ public class RSMRenderPass : FRenderPassRender
 
     private void DrawRender()
     {
-        buffer.Clear();
+        buffer.BeginSample("DrawOpaque");
         context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
+
+        buffer.SetRenderTarget(renderingData.ColorTarget, renderingData.DepthTarget);
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
         SortingSettings sortingSettings = new SortingSettings(camera);
         FilteringSettings filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
         DrawingSettings drawingSettings = new DrawingSettings(baseShaderTagID, sortingSettings);
@@ -546,6 +589,10 @@ public class RSMRenderPass : FRenderPassRender
         filteringSettings.renderQueueRange = RenderQueueRange.opaque;
         drawingSettings.perObjectData = PerObjectData.Lightmaps | PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume | PerObjectData.ReflectionProbes;
         context.DrawRenderers(renderingData.cullingResults, ref drawingSettings, ref filteringSettings, ref stateBlock);
+
+        buffer.EndSample("DrawOpaque");
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
     }
 
     public override void Cleanup()
