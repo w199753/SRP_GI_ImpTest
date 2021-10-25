@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+
 public static class Utility
 {
     public static List<V> GetValueList<K, V>(this System.Collections.Generic.Dictionary<K, V>.ValueCollection collection)
@@ -43,6 +45,16 @@ public static class MaterialPool
             m_Dic[name] = new Material(Shader.Find(name));
         return m_Dic[name];
     }
+}
+
+public static class ShaderTagConstant
+{
+    public static ShaderTagId BaseShaderTagID = new ShaderTagId("FRP_BASE");
+    public static ShaderTagId ShadowCasterTagID = new ShaderTagId("FRP_Caster_Shadow");
+    public static ShaderTagId RsmNormalCasterTagID = new ShaderTagId("FRP_Caster_Normal");
+    public static ShaderTagId RsmFluxCasterTagID = new ShaderTagId("FRP_Caster_Flux");
+    public static ShaderTagId RsmWorldPosCasterTagID = new ShaderTagId("FRP_Caster_WorldPos");
+    
 }
 
 

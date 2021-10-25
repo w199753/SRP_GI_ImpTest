@@ -66,8 +66,10 @@ List<Material> sharedMatList = new List<Material>(16);
                 else
                 {
                     var mainTex = matList[i].mainTexture;
+                    if(mainTex == null) continue;
                     var mainTexName = mainTex.name;
                     int idx = mainTexName.LastIndexOf("_");
+                    var normalTex = Resources.Load<Texture>("Texture/SponzaTextures/"+mainTexName+"_ddn");
                     if(idx>=0)
                     {
                         Debug.Log("fzy name:"+mainTexName.Substring(0,idx));
@@ -79,6 +81,11 @@ List<Material> sharedMatList = new List<Material>(16);
                     var mat = new Material(Shader.Find("FRP/Default"));
                     mat.name = meshRender.sharedMaterials[i].name;
                     mat.SetTexture("_MainTex",mainTex);
+                    if(normalTex != null)
+                    {
+                        mat.EnableKeyword("_NormalTexOn");
+                        mat.SetTexture("_Normal",normalTex);
+                    }
                     //meshRender.sharedMaterials[i] = mat;
                     sharedMatList.Add(mat);
                     resultMatDic.Add(matList[i].name,mat);

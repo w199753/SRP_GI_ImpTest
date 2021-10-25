@@ -3,6 +3,7 @@
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _Color("Color",Color) = (1,1,1,1)
         _Normal("_Normal",2D) = "white"{}
         _RoughnessTex("_RoughnessTex",2D) = "white"{}
         _MetallicTex("_MetallicTex",2D) = "white"{}
@@ -18,6 +19,7 @@
             HLSLPROGRAM
             #include "./FRP_Default.hlsl"
             #pragma shader_feature _NormalTexOn
+            #pragma shader_feature _MetallicTexOn
             #pragma vertex vert
             #pragma fragment frag
 
@@ -32,8 +34,8 @@
             ColorMask R
             HLSLPROGRAM
             #include "./FRP_RSM.hlsl"
-            #pragma shader_feature _NormalTexOn
-            #pragma vertex vert_shadow
+            //#pragma shader_feature _NormalTexOn
+            #pragma vertex vert_sm
             #pragma fragment frag_sm
 
 
@@ -44,13 +46,36 @@
         {
             Name "FRP_Caster_Normal"
             Tags{"LightMode" = "FRP_Caster_Normal"}
-            ColorMask R
             HLSLPROGRAM
             #include "./FRP_RSM.hlsl"
             #pragma shader_feature _NormalTexOn
-            #pragma vertex vert_shadow
-            #pragma fragment frag_sm
+            #pragma vertex vert_normal
+            #pragma fragment frag_normal
 
+
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "FRP_Caster_Flux"
+            Tags{"LightMode" = "FRP_Caster_Flux"}
+            HLSLPROGRAM
+            #include "./FRP_RSM.hlsl"
+            #pragma vertex vert_flux
+            #pragma fragment frag_flux
+
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "FRP_Caster_WorldPos"
+            Tags{"LightMode" = "FRP_Caster_WorldPos"}
+            HLSLPROGRAM
+            #include "./FRP_RSM.hlsl"
+            #pragma vertex vert_world
+            #pragma fragment frag_world
 
             ENDHLSL
         }
