@@ -5,6 +5,7 @@
 #include "./UnityHLSL.hlsl"
 #include "./FRPLight.hlsl"
 #include "./FRP_BRDF.hlsl"
+#include "./Noise_Library.hlsl"
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
@@ -24,7 +25,7 @@ CBUFFER_START(UnityPerMaterial)
     //TEXTURE2D(_Normal);
     float4x4 _ShadowMapVP;
     int _RsmSampleCount;
-    
+    int _RsmEnableInDir;
 CBUFFER_END
 
 
@@ -100,6 +101,18 @@ float transferDepth(float z)
     return res;
 }
 
+float getShadow(float2 uv,float depth)
+{
+    poissonDiskSamples(uv);
+    float shadow = 0;
+    for(int i=0;i<50;i++)
+    {
+        float sm_depth = SAMPLE_TEXTURE2D(_ShadowMapTex,sampler_SMShadowMap,uv + poissonDisk[i]*(1.0/1024.0)).r;
+        shadow += min(max(0.0,step(depth-0.05,sm_depth)),1);
+    }
+    return shadow/50.0;
+}
+
 v2f vert (appdata v)
 {
     v2f o;
@@ -122,16 +135,17 @@ float4 frag (v2f i) : SV_Target
     // sample the texture
     float4 rec_ndc = i.sm_coord/i.sm_coord.w ;
     float2 rec_uv = rec_ndc.xy*0.5 +0.5;
-    
+    rec_uv.y = 1.0-rec_uv.y;
     float depth = transferDepth(rec_ndc.z);
     float sm_depth = SAMPLE_TEXTURE2D(_ShadowMapTex,sampler_SMShadowMap,rec_uv).r;
+    
     //return sm_depth;
     //return min(max(0.0,step(depth-0.05,sm_depth)),1);
     float3 indirect=0;
-    float shadow = min(max(0.0,step(depth-0.05,sm_depth)),1);
+    float shadow = getShadow(rec_uv,depth);
     //return shadow;
     //shadow = 1;
-    float4 abledo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv);
+    float4 abledo = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv)*_Color;
     float4 resColor = 0;
 
     float3x3 tangentTransform = float3x3(i.tangent, i.bitangent, normalize(i.normal));
@@ -176,7 +190,7 @@ float4 frag (v2f i) : SV_Target
 		float3 vpl_flux=SAMPLE_TEXTURE2D(_RsmFlux,sampler_SMShadowMap,sample_coord);
 
 		float3 indirect_result = (vpl_flux*max(0, dot(vpl_normal, worldPos-vpl_worldPos))*max(0, dot(N, vpl_worldPos-worldPos)))/pow(length(worldPos-vpl_worldPos),2.0);
-		indirect_result*=(weight*8);
+		indirect_result*=(weight*20);
 		indirect+=indirect_result;
     }
 
@@ -201,12 +215,13 @@ float4 frag (v2f i) : SV_Target
         
     }
 
-
     float3 ks = F_SchlickRoughness(brdfParam.VdotH,F0,Roughness);
     float3 kd = (1.0-ks)*(1.0-Metallic);
 
-    indirect = (indirect/_RsmSampleCount) * kd * abledo.xyz *1;
-    indirect = 0;
+    if(_RsmEnableInDir == 1)
+        indirect = (indirect/_RsmSampleCount) * kd * abledo.xyz *1;
+    else
+        indirect = 0;
     return float4(indirect + dirCol.xyz,1) ;
 
     // float4 xx = SAMPLE_TEXTURE2D(_ShadowMapTex,sampler_SMShadowMap,sm_uv);

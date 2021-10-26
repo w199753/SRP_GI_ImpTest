@@ -19,6 +19,8 @@ CBUFFER_END
 #define sampler_MainTex SamplerState_Point_Clamp
 SAMPLER(sampler_MainTex);
 
+#define sampler_Flux SamplerState_Trilinear_Repeat
+SAMPLER(sampler_Flux);
 
 float transferDepth(float z)
 {
@@ -140,7 +142,7 @@ v2f_flux vert_flux (appdata_flux v)
 float4 frag_flux (v2f_flux i) : SV_Target
 {
     // sample the texture
-    float4 col = SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv);
+    float4 col = SAMPLE_TEXTURE2D(_MainTex,sampler_Flux,i.uv);
     return col*_Color;
 }
 

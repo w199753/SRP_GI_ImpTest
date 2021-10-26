@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: FRP
   m_EditorClassIdentifier: 
   renderSetting:
-    GI_Type: 3
+    GI_Type: 2
     renderAssetBase: {fileID: 11400000, guid: 45e42b1bc21f9454780635336bfbf53a, type: 2}
