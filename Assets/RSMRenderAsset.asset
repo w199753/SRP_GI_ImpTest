@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: RSMRenderAsset
   m_EditorClassIdentifier: 
   RSM_Resolution: 1024
+  enableInDirLight: 1

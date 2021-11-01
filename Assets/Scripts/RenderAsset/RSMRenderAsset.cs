@@ -228,7 +228,7 @@ public class RSMRenderPass : FRenderPassRender
         //DrawAABB(bb,dirLight.transform.localToWorldMatrix);
 
         var mm = GetMaxBoundingBox(bb,casterBoundVerts);
-        DrawAABB(mm,dirLight.transform.localToWorldMatrix);
+        // DrawAABB(mm,dirLight.transform.localToWorldMatrix);
 
 
         var farDist = Vector3.Distance(mm.Far[0], mm.Far[2]);
@@ -268,7 +268,6 @@ public class RSMRenderPass : FRenderPassRender
             for (int i = 0; i < cullParam.cullingPlaneCount; i++)
             {
                 //cullParam.SetCullingPlane(i, GetCullingPlane(i,mm,dirLight.transform.localToWorldMatrix));
-                Debug.Log("fzy pp:"+panels[i]);
                 cullParam.SetCullingPlane(i,panels[i]);
                 
                 //cullParam.SetCullingPlane(i, new Plane(new Vector3(0, 1, 0), new Vector3()));

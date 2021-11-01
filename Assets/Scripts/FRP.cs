@@ -80,7 +80,7 @@ public class FRP : RenderPipeline
             pass.Render();
         }
 
-
+        PostEffectRenderPass.Instance.ExecuteRender(ref context,camera,ref renderingData);
 
 
         //PreRenderPass.Instance.Render();
