@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-
+using FPostProcessing;
 public class FRP : RenderPipeline
 {
     private FRenderSetting renderSettings;
