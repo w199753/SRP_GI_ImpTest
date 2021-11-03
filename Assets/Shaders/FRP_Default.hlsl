@@ -6,6 +6,7 @@
 #include "./FRPLight.hlsl"
 #include "./FRP_BRDF.hlsl"
 #include "./Noise_Library.hlsl"
+#include "./Montcalo_Library.hlsl"
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
@@ -55,40 +56,9 @@ struct v2f
     float3 tangent :TEXCOORD2;
     float3 bitangent :TEXCOORD3;
     float3 normal :TEXCOORD4;
-
     float4 sm_coord : TEXCOORD5;
+    float depth : TEXCOORD6;
 };
-
-uint ReverseBits32(uint bits)
-{
-	bits = (bits << 16) | (bits >> 16);
-	bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >> 8);
-	bits = ((bits & 0x0f0f0f0f) << 4) | ((bits & 0xf0f0f0f0) >> 4);
-	bits = ((bits & 0x33333333) << 2) | ((bits & 0xcccccccc) >> 2);
-	bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >> 1);
-	return bits;
-}
-
-uint HaltonSequence(uint Index, uint base = 3)
-{
-	uint result = 0;
-	uint f = 1;
-	uint i = Index;
-	
-	[unroll(255)] 
-	while (i > 0) {
-		result += (f / base) * (i % base);
-		i = floor(i / base);
-	}
-	return result;
-}
-
-float2 Hammersley(uint Index, uint NumSamples, uint2 Random)
-{
-	float E1 = frac((float)Index / NumSamples + float(Random.x & 0xffff) / (1 << 16));
-	float E2 = float(ReverseBits32(Index) ^ Random.y) * 2.3283064365386963e-10;
-	return float2(E1, E2);
-}
 
 float transferDepth(float z)
 {
@@ -135,7 +105,7 @@ float4 frag (v2f i) : SV_Target
     // sample the texture
     float4 rec_ndc = i.sm_coord/i.sm_coord.w ;
     float2 rec_uv = rec_ndc.xy*0.5 +0.5;
-    rec_uv.y = 1.0-rec_uv.y;
+    //rec_uv.y = 1.0-rec_uv.y;
     float depth = transferDepth(rec_ndc.z);
     float sm_depth = SAMPLE_TEXTURE2D(_ShadowMapTex,sampler_SMShadowMap,rec_uv).r;
     
@@ -238,6 +208,81 @@ float4 frag (v2f i) : SV_Target
 // #endif
 //     return N.xyzz;
     return abledo;
+}
+
+// Encoding/decoding view space normals into 2D 0..1 vector
+inline float2 EncodeViewNormalStereo( float3 n )
+{
+    float kScale = 1.7777;
+    float2 enc;
+    enc = n.xy / (n.z+1);
+    enc /= kScale;
+    enc = enc*0.5+0.5;
+    return enc;
+}
+// Encoding/decoding [0..1) floats into 8 bit/channel RG. Note that 1.0 will not be encoded properly.
+inline float2 EncodeFloatRG( float v )
+{
+    float2 kEncodeMul = float2(1.0, 255.0);
+    float kEncodeBit = 1.0/255.0;
+    float2 enc = kEncodeMul * v;
+    enc = frac (enc);
+    enc.x -= enc.y * kEncodeBit;
+    return enc;
+}
+
+inline float4 EncodeDepthNormal( float depth, float3 normal )
+{
+    float4 enc;
+    enc.xy = EncodeViewNormalStereo (normal);
+    enc.zw = EncodeFloatRG (depth);
+    return enc;
+}
+
+
+
+// v2f vert_depthNormal(appdata v)
+// {
+//     v2f o;
+//     o.vertex = TransformObjectToHClip(v.vertex.xyz);
+//     o.normal = normalize(mul((float3x3)UNITY_MATRIX_IT_MV, v.normal));
+//     o.depth = -(mul(UNITY_MATRIX_V, TransformObjectToWorld(v.vertex.xyz)).z * _ProjectionParams.w);
+//     o.uv = TRANSFORM_TEX(v.uv, _MainTex); 
+//     return o;
+// }
+
+// float4 frag_dpethNormal(v2f i):SV_TARGET
+// {
+//     //return i.normal.xyzz;
+//     return EncodeDepthNormal(i.depth, i.normal);
+//     return 1;
+// }
+
+
+
+v2f vert_depthNormal(appdata v)
+{
+    v2f o;
+    o.vertex = TransformObjectToHClip(v.vertex.xyz);
+    float3 w_normal = TransformObjectToWorldNormal(v.normal);
+    float3 w_tangent = normalize(mul(unity_ObjectToWorld,float4(v.tangent.xyz,0)).xyz);
+    float3 w_bitangent = cross(w_normal , w_tangent) * v.tangent.w;
+    float3x3 tangentTransform = float3x3(w_tangent, w_bitangent, w_normal);
+    o.tangent = w_tangent;
+    o.bitangent = w_bitangent;
+    o.normal = w_normal;
+
+    o.depth = -(mul(UNITY_MATRIX_V, TransformObjectToWorld(v.vertex.xyz)).z * _ProjectionParams.w);
+    o.uv = TRANSFORM_TEX(v.uv, _MainTex); 
+    return o;
+}
+
+float4 frag_dpethNormal(v2f i):SV_TARGET
+{
+    //return i.normal.xyzz;
+    return float4(PackNormalOctRectEncode(TransformWorldToViewDir(i.normal, true)),0.0,0.0);
+    //return EncodeDepthNormal(i.depth, i.normal);
+    return 1;
 }
 
 #endif

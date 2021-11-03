@@ -45,6 +45,7 @@ public class PreRenderPass
         }
     }
     private const string BUFFER_NAME = "PreRender";
+    private const string DEPTH_NORMAL_PROFILER_NAME = "DepthNormalPass";
     FRenderSetting setting;
     CommandBuffer buffer = new CommandBuffer() { name = BUFFER_NAME };
     ScriptableRenderContext context;
@@ -52,6 +53,9 @@ public class PreRenderPass
     RenderingData renderingData;
     private static readonly ShaderPropertyID shaderPropertyID = new ShaderPropertyID();
 
+    RenderTargetIdentifier depthNormalID = new RenderTargetIdentifier(shaderPropertyID.depthNormalTex);
+    RenderTextureDescriptor depthNormalDesc = new RenderTextureDescriptor();
+    RenderTargetIdentifier cameraTargetID = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
     ComputeBuffer lightDataBuffer;
     List<LightingData> lightDataList;
     private int prevLightCount = -1;
@@ -75,6 +79,7 @@ public class PreRenderPass
 
         RenderPrepareLight();
         RenderPrepareShadow();
+        buffer.EndSample(BUFFER_NAME);
         RenderPrepareDepthNormal();
 
         buffer.EndSample(BUFFER_NAME);
@@ -135,6 +140,29 @@ public class PreRenderPass
 
     private void RenderPrepareDepthNormal()
     {
+        buffer.BeginSample(DEPTH_NORMAL_PROFILER_NAME);
+        depthNormalDesc = Utility.ConfigRTDescriptor(depthNormalDesc, camera.pixelWidth, camera.pixelHeight, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm, 32);
+        //buffer.GetTemporaryRT(shaderPropertyID.depthNormalTex, depthNormalDesc, FilterMode.Point);
+        buffer.GetTemporaryRT(shaderPropertyID.depthNormalTex, depthNormalDesc, FilterMode.Point);
+        //buffer.GetTemporaryRT(shaderPropertyID.depthNormalTex,camera.pixelWidth,camera.pixelHeight,32,FilterMode.Point,RenderTextureFormat.ARGB32);
+        buffer.SetRenderTarget(depthNormalID, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+        buffer.ClearRenderTarget(true, true, Color.clear);
+        buffer.BeginSample(DEPTH_NORMAL_PROFILER_NAME);
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
 
+        buffer.SetGlobalMatrix(Shader.PropertyToID("_TestV"),camera.worldToCameraMatrix);
+        SortingSettings sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.RenderQueue };
+        FilteringSettings filteringSettings = new FilteringSettings(RenderQueueRange.all);
+        DrawingSettings drawingSettings = new DrawingSettings() { sortingSettings = sortingSettings };
+        drawingSettings.SetShaderPassName(0, ShaderTagConstant.DpethNormalPassTagID);
+
+        context.DrawRenderers(renderingData.cullingResults, ref drawingSettings, ref filteringSettings);
+
+        buffer.SetRenderTarget(cameraTargetID, cameraTargetID);
+        buffer.ReleaseTemporaryRT(shaderPropertyID.depthNormalTex);
+        buffer.EndSample(DEPTH_NORMAL_PROFILER_NAME);
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
     }
 }

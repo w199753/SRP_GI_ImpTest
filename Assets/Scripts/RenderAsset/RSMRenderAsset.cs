@@ -200,16 +200,16 @@ public class RSMRenderPass : FRenderPassRender
             cameraCorner.Near[j] = cameraLocal2World.MultiplyPoint(pNear);
             cameraCorner.Far[j] = cameraLocal2World.MultiplyPoint(pFar);
         }
-        shadowMapDesc = ConfigRTDescriptor(shadowMapDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
+        shadowMapDesc = Utility.ConfigRTDescriptor(shadowMapDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
         buffer.GetTemporaryRT(shaderPropertyID.ShadowMap_Tex, shadowMapDesc, FilterMode.Point);
 
-        fluxDesc = ConfigRTDescriptor(fluxDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
+        fluxDesc = Utility.ConfigRTDescriptor(fluxDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
         buffer.GetTemporaryRT(shaderPropertyID.Rsm_Flux, fluxDesc, FilterMode.Bilinear);
 
-        normalDesc = ConfigRTDescriptor(normalDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
+        normalDesc = Utility.ConfigRTDescriptor(normalDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
         buffer.GetTemporaryRT(shaderPropertyID.Rsm_WorldNormal, normalDesc, FilterMode.Bilinear);
 
-        worldPosDesc = ConfigRTDescriptor(worldPosDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
+        worldPosDesc = Utility.ConfigRTDescriptor(worldPosDesc, renderAsset.RSM_Resolution, renderAsset.RSM_Resolution, GraphicsFormat.R32G32B32A32_SFloat, 32);
         buffer.GetTemporaryRT(shaderPropertyID.Rsm_WorldPos, worldPosDesc, FilterMode.Bilinear);
 
         context.ExecuteCommandBuffer(buffer);
@@ -437,18 +437,18 @@ SetRandomSamplePoint();
 
 
 
-    private RenderTextureDescriptor ConfigRTDescriptor(RenderTextureDescriptor descriptor, int width, int height, GraphicsFormat format, int depthBits, TextureDimension dimension = TextureDimension.Tex2D)
-    {
-        descriptor.width = width;
-        descriptor.height = height;
-        descriptor.graphicsFormat = format;
-        descriptor.depthBufferBits = depthBits;
-        descriptor.useMipMap = false;
-        descriptor.autoGenerateMips = false;
-        descriptor.msaaSamples = 1;
-        descriptor.dimension = dimension;
-        return descriptor;
-    }
+    // private RenderTextureDescriptor ConfigRTDescriptor(RenderTextureDescriptor descriptor, int width, int height, GraphicsFormat format, int depthBits, TextureDimension dimension = TextureDimension.Tex2D)
+    // {
+    //     descriptor.width = width;
+    //     descriptor.height = height;
+    //     descriptor.graphicsFormat = format;
+    //     descriptor.depthBufferBits = depthBits;
+    //     descriptor.useMipMap = false;
+    //     descriptor.autoGenerateMips = false;
+    //     descriptor.msaaSamples = 1;
+    //     descriptor.dimension = dimension;
+    //     return descriptor;
+    // }
 
     private Vector3 GetPlaneNormal(Vector3 p0, Vector3 p1, Vector3 p2)
     {
@@ -657,6 +657,7 @@ SetRandomSamplePoint();
         buffer.EndSample(BUFFER_NAME);
         buffer.BeginSample("DrawOpaque");
         buffer.SetRenderTarget(renderingData.ColorTarget, renderingData.DepthTarget);
+        //buffer.ClearRenderTarget(true,true,Color.clear);
         buffer.BeginSample("DrawOpaque");
         buffer.SetGlobalInt(shaderPropertyID.Rsm_SampleCount,renderAsset.RSM_Resolution);
         context.ExecuteCommandBuffer(buffer);

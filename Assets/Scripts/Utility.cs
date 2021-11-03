@@ -34,6 +34,15 @@ public static class Utility
         }
     }
 
+    public static RenderTextureDescriptor ConfigRTDescriptor(RenderTextureDescriptor descriptor, int width, int height, UnityEngine.Experimental.Rendering.GraphicsFormat format, int depthBits, TextureDimension dimension = TextureDimension.Tex2D)
+    {
+        descriptor = new RenderTextureDescriptor(width,height,format,depthBits);
+        descriptor.useMipMap = false;
+        descriptor.autoGenerateMips = false;
+        descriptor.dimension = dimension;
+        return descriptor;
+    }
+
 }
 
 public static class MaterialPool
@@ -54,6 +63,7 @@ public static class ShaderTagConstant
     public static ShaderTagId RsmNormalCasterTagID = new ShaderTagId("FRP_Caster_Normal");
     public static ShaderTagId RsmFluxCasterTagID = new ShaderTagId("FRP_Caster_Flux");
     public static ShaderTagId RsmWorldPosCasterTagID = new ShaderTagId("FRP_Caster_WorldPos");
+    public static ShaderTagId DpethNormalPassTagID = new ShaderTagId("FRP_DepthNormal");
     
 }
 

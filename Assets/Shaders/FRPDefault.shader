@@ -79,6 +79,20 @@
 
             ENDHLSL
         }
+
+        ZTest On
+        Pass
+        {
+            Name "FRP_DepthNormal"
+            Tags{"LightMode" = "FRP_DepthNormal"}
+            HLSLPROGRAM
+            #include "./FRP_Default.hlsl"
+            #pragma shader_feature _NormalTexOn
+            #pragma vertex vert_depthNormal
+            #pragma fragment frag_dpethNormal
+
+            ENDHLSL
+        }
     }
     CustomEditor "FRPShaderGUI"
 }

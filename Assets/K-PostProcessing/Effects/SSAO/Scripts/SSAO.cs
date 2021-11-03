@@ -18,6 +18,9 @@ namespace FPostProcessing
     {
         [Range(8, 64)]
         public IntParameter SampleCount = new IntParameter() { value = 32 };
+        [Range(0.01f,3)]
+        public FloatParameter ThicknessStrength = new FloatParameter(){value = 1};
+        public BoolParameter OnlyShowAO = new BoolParameter(){value = false};
     }
 
     public sealed class SSAORender : PostProcessEffectRenderer<SSAO>
@@ -25,6 +28,8 @@ namespace FPostProcessing
         private class ShaderPropertyID
         {
             public int SampleCount;
+            public int OnlyShowAO;
+            public int ThicknessStrength;
 
             public ShaderPropertyID()
             {
@@ -49,6 +54,8 @@ namespace FPostProcessing
             buffer.BeginSample(PROFILER_TAG);
 
             sheet.properties.SetInt(m_shaderPropertyID.SampleCount, settings.SampleCount);
+            sheet.properties.SetInt(m_shaderPropertyID.OnlyShowAO,settings.OnlyShowAO == true ? 1: 0);
+            sheet.properties.SetFloat(m_shaderPropertyID.ThicknessStrength,settings.ThicknessStrength);
 
             context.command.BlitFullscreenTriangle(context.source, context.destination, sheet, 0);
             buffer.EndSample(PROFILER_TAG);

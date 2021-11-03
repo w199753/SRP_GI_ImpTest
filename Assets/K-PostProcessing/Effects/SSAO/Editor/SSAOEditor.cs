@@ -10,9 +10,13 @@ namespace FPostProcessing
     public class SSAOEditor : PostProcessEffectEditor<SSAO>
     {
         SerializedParameterOverride SampleCount;
+        SerializedParameterOverride ThicknessStrength;
+        SerializedParameterOverride OnlyShowAO;
         public override void OnEnable()
         {
             SampleCount = FindParameterOverride(x => x.SampleCount);
+            OnlyShowAO = FindParameterOverride(x=>x.OnlyShowAO);
+            ThicknessStrength = FindParameterOverride(x=>x.ThicknessStrength);
         }
 
         public override string GetDisplayTitle()
@@ -23,6 +27,8 @@ namespace FPostProcessing
         public override void OnInspectorGUI()
         {
             PropertyField(SampleCount);
+            PropertyField(ThicknessStrength);
+            PropertyField(OnlyShowAO);
         }
     }
 }
