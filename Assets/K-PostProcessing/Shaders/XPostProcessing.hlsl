@@ -5,10 +5,12 @@
 //Always present in every shader
 TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex); //Present in every shader
 
-TEXTURE2D_SAMPLER2D(_CameraDepthNormalsTexture, sampler_CameraDepthNormalsTexture);
-TEXTURE2D_SAMPLER2D(_CameraDepthTexture,sampler_CameraDepthTexture);
-float4 _MainTex_TexelSize;
+TEXTURE2D_SAMPLER2D(_CameraDepthNormal, sampler_CameraDepthNormal);
 
+TEXTURE2D_SAMPLER2D(_CameraDepthTexture,sampler_CameraDepthTexture);
+
+float4 _MainTex_TexelSize;
+	float4 _CameraDepthNormal_TexelSize;
 
 
 #define fixed half
@@ -451,7 +453,7 @@ half4 LuminanceThreshold(half4 color, half threshold)
 
 float4 GetDepthNormal_ViewSpace(float2 uv)
 {
-	float4 cdn = SAMPLE_TEXTURE2D(_CameraDepthNormalsTexture, sampler_CameraDepthNormalsTexture, uv);
+	float4 cdn = SAMPLE_TEXTURE2D(_CameraDepthNormal, sampler_CameraDepthNormal, uv);
 	float4 Normal_ViewSpace = float4(DecodeViewNormalStereo(cdn), 1);
 	return Normal_ViewSpace;
 }

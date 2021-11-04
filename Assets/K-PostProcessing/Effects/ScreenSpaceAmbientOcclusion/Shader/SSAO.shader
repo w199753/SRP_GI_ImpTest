@@ -22,7 +22,7 @@
 
 #define MAX_SAMPLE_KERNEL_COUNT 32
 	sampler2D _MainTex;
-	sampler2D _CameraDepthNormalsTexture;
+	sampler2D _CameraDepthNormal;
 	float4x4 _InverseProjectionMatrix;
 	float _DepthBiasValue;
 	float4 _SampleKernelArray[MAX_SAMPLE_KERNEL_COUNT];
@@ -38,7 +38,7 @@
 
 	float3 GetNormal(float2 uv)
 	{
-		float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
+		float4 cdn = tex2D(_CameraDepthNormal, uv);
 		return DecodeViewNormalStereo(cdn);
 	}
 
@@ -65,7 +65,7 @@
 		float linear01Depth;
 		float3 viewNormal;
 
-		float4 cdn = tex2D(_CameraDepthNormalsTexture, i.uv);
+		float4 cdn = tex2D(_CameraDepthNormal, i.uv);
 		DecodeDepthNormal(cdn, linear01Depth, viewNormal);
 		float3 viewPos = linear01Depth * i.viewRay;
 		viewNormal = normalize(viewNormal) * float3(1, 1, -1);
@@ -85,7 +85,7 @@
 
 			float randomDepth;
 			float3 randomNormal;
-			float4 rcdn = tex2D(_CameraDepthNormalsTexture, rscreenPos);
+			float4 rcdn = tex2D(_CameraDepthNormal, rscreenPos);
 			DecodeDepthNormal(rcdn, randomDepth, randomNormal);
 			float range = abs(randomDepth - linear01Depth) * _ProjectionParams.z < _SampleKeneralRadius ? 1.0 : 0.0;
 			float ao = randomDepth + _DepthBiasValue < linear01Depth ? 1.0 : 0.0;

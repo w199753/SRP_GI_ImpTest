@@ -267,9 +267,9 @@ public class RSMRenderPass : FRenderPassRender
             
             for (int i = 0; i < cullParam.cullingPlaneCount; i++)
             {
-                //cullParam.SetCullingPlane(i, GetCullingPlane(i,mm,dirLight.transform.localToWorldMatrix));
-                cullParam.SetCullingPlane(i,panels[i]);
-                
+                cullParam.SetCullingPlane(i, GetCullingPlane(i,mm,dirLight.transform.localToWorldMatrix));
+                //cullParam.SetCullingPlane(i,panels[i]);
+                //cullParam.SetCullingPlane(i,new Plane(new Vector3(0,-1,0),new Vector3()));
                 //cullParam.SetCullingPlane(i, new Plane(new Vector3(0, 1, 0), new Vector3()));
             }
             m_cullingResults = context.Cull(ref cullParam);

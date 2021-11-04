@@ -56,7 +56,8 @@ namespace FPostProcessing
             sheet.properties.SetInt(m_shaderPropertyID.SampleCount, settings.SampleCount);
             sheet.properties.SetInt(m_shaderPropertyID.OnlyShowAO,settings.OnlyShowAO == true ? 1: 0);
             sheet.properties.SetFloat(m_shaderPropertyID.ThicknessStrength,settings.ThicknessStrength);
-
+            context.command.SetGlobalMatrix(Shader.PropertyToID("_InvProject"),GL.GetGPUProjectionMatrix(context.camera.projectionMatrix,false).inverse);
+            context.command.SetGlobalMatrix(Shader.PropertyToID("_InvView"),context.camera.worldToCameraMatrix.inverse);
             context.command.BlitFullscreenTriangle(context.source, context.destination, sheet, 0);
             buffer.EndSample(PROFILER_TAG);
         }

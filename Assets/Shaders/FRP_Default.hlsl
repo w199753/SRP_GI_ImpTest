@@ -241,11 +241,38 @@ inline float4 EncodeDepthNormal( float depth, float3 normal )
 
 
 
+v2f vert_depthNormal(appdata v)
+{
+    v2f o;
+    o.vertex = TransformObjectToHClip(v.vertex.xyz);
+    o.normal = normalize(mul((float3x3)UNITY_MATRIX_IT_MV, v.normal));
+    o.depth = -(mul(UNITY_MATRIX_V, mul(unity_ObjectToWorld,float4(v.vertex.xyz,1.0))).z * _ProjectionParams.w);
+    o.uv = TRANSFORM_TEX(v.uv, _MainTex); 
+    return o;
+}
+
+float4 frag_dpethNormal(v2f i):SV_TARGET
+{
+    //return i.depth;
+    //return i.normal.xyzz;
+    return EncodeDepthNormal(i.depth, i.normal);
+    return 1;
+}
+
+
+
 // v2f vert_depthNormal(appdata v)
 // {
 //     v2f o;
 //     o.vertex = TransformObjectToHClip(v.vertex.xyz);
-//     o.normal = normalize(mul((float3x3)UNITY_MATRIX_IT_MV, v.normal));
+//     float3 w_normal = TransformObjectToWorldNormal(v.normal);
+//     float3 w_tangent = normalize(mul(unity_ObjectToWorld,float4(v.tangent.xyz,0)).xyz);
+//     float3 w_bitangent = cross(w_normal , w_tangent) * v.tangent.w;
+//     float3x3 tangentTransform = float3x3(w_tangent, w_bitangent, w_normal);
+//     o.tangent = w_tangent;
+//     o.bitangent = w_bitangent;
+//     o.normal = w_normal;
+
 //     o.depth = -(mul(UNITY_MATRIX_V, TransformObjectToWorld(v.vertex.xyz)).z * _ProjectionParams.w);
 //     o.uv = TRANSFORM_TEX(v.uv, _MainTex); 
 //     return o;
@@ -254,35 +281,9 @@ inline float4 EncodeDepthNormal( float depth, float3 normal )
 // float4 frag_dpethNormal(v2f i):SV_TARGET
 // {
 //     //return i.normal.xyzz;
-//     return EncodeDepthNormal(i.depth, i.normal);
+//     return float4(PackNormalOctRectEncode(TransformWorldToViewDir(i.normal, true)),0.0,0.0);
+//     //return EncodeDepthNormal(i.depth, i.normal);
 //     return 1;
 // }
-
-
-
-v2f vert_depthNormal(appdata v)
-{
-    v2f o;
-    o.vertex = TransformObjectToHClip(v.vertex.xyz);
-    float3 w_normal = TransformObjectToWorldNormal(v.normal);
-    float3 w_tangent = normalize(mul(unity_ObjectToWorld,float4(v.tangent.xyz,0)).xyz);
-    float3 w_bitangent = cross(w_normal , w_tangent) * v.tangent.w;
-    float3x3 tangentTransform = float3x3(w_tangent, w_bitangent, w_normal);
-    o.tangent = w_tangent;
-    o.bitangent = w_bitangent;
-    o.normal = w_normal;
-
-    o.depth = -(mul(UNITY_MATRIX_V, TransformObjectToWorld(v.vertex.xyz)).z * _ProjectionParams.w);
-    o.uv = TRANSFORM_TEX(v.uv, _MainTex); 
-    return o;
-}
-
-float4 frag_dpethNormal(v2f i):SV_TARGET
-{
-    //return i.normal.xyzz;
-    return float4(PackNormalOctRectEncode(TransformWorldToViewDir(i.normal, true)),0.0,0.0);
-    //return EncodeDepthNormal(i.depth, i.normal);
-    return 1;
-}
 
 #endif

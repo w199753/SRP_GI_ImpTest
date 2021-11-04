@@ -41,7 +41,7 @@ public class PreRenderPass
             smSplitFars = Shader.PropertyToID("_LightSplitFar");
             smTempDepth = Shader.PropertyToID("_TempDepth");
 
-            depthNormalTex = Shader.PropertyToID("_DepthNormal");
+            depthNormalTex = Shader.PropertyToID("_CameraDepthNormal");
         }
     }
     private const string BUFFER_NAME = "PreRender";
@@ -151,7 +151,6 @@ public class PreRenderPass
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
 
-        buffer.SetGlobalMatrix(Shader.PropertyToID("_TestV"),camera.worldToCameraMatrix);
         SortingSettings sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.RenderQueue };
         FilteringSettings filteringSettings = new FilteringSettings(RenderQueueRange.all);
         DrawingSettings drawingSettings = new DrawingSettings() { sortingSettings = sortingSettings };

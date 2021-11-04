@@ -227,7 +227,7 @@ half4 SafeHDR(half4 c)
     return min(c, HALF_MAX);
 }
 
-// Decode normals stored in _CameraDepthNormalsTexture
+// Decode normals stored in _CameraDepthNormal
 float3 DecodeViewNormalStereo(float4 enc4)
 {
     float kScale = 1.7777;
@@ -237,6 +237,18 @@ float3 DecodeViewNormalStereo(float4 enc4)
     n.xy = g * nn.xy;
     n.z = g - 1.0;
     return n;
+}
+
+inline float DecodeFloatRG( float2 enc )
+{
+    float2 kDecodeDot = float2(1.0, 1/255.0);
+    return dot( enc, kDecodeDot );
+}
+
+inline void DecodeDepthNormal( float4 enc, out float depth, out float3 normal )
+{
+    depth = DecodeFloatRG (enc.zw);
+    normal = DecodeViewNormalStereo (enc);
 }
 
 // Interleaved gradient function from Jimenez 2014
@@ -263,6 +275,7 @@ float2 TransformTriangleVertexToUV(float2 vertex)
 struct AttributesDefault
 {
     float3 vertex : POSITION;
+    float2 uv : TEXCOORD0;
 };
 
 struct VaryingsDefault
