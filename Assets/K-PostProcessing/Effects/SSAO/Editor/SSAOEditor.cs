@@ -12,11 +12,15 @@ namespace FPostProcessing
         SerializedParameterOverride SampleCount;
         SerializedParameterOverride ThicknessStrength;
         SerializedParameterOverride OnlyShowAO;
+        SerializedParameterOverride SampleRange;
+        SerializedParameterOverride SampleBias;
         public override void OnEnable()
         {
             SampleCount = FindParameterOverride(x => x.SampleCount);
             OnlyShowAO = FindParameterOverride(x=>x.OnlyShowAO);
             ThicknessStrength = FindParameterOverride(x=>x.ThicknessStrength);
+            SampleRange = FindParameterOverride(x=>x.SampleRange);
+            SampleBias = FindParameterOverride(x=>x.SampleBias);
         }
 
         public override string GetDisplayTitle()
@@ -29,6 +33,8 @@ namespace FPostProcessing
             PropertyField(SampleCount);
             PropertyField(ThicknessStrength);
             PropertyField(OnlyShowAO);
+            PropertyField(SampleRange);
+            PropertyField(SampleBias);
         }
     }
 }

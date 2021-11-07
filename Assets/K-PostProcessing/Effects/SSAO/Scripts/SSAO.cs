@@ -21,6 +21,10 @@ namespace FPostProcessing
         [Range(0.01f,3)]
         public FloatParameter ThicknessStrength = new FloatParameter(){value = 1};
         public BoolParameter OnlyShowAO = new BoolParameter(){value = false};
+        [Range(0.001f,4.5f)]
+        public FloatParameter SampleRange = new FloatParameter(){value = 1};
+        [Range(0.0001f,0.05f)]
+        public FloatParameter SampleBias = new FloatParameter(){value = 0.0023f};
     }
 
     public sealed class SSAORender : PostProcessEffectRenderer<SSAO>
@@ -30,10 +34,16 @@ namespace FPostProcessing
             public int SampleCount;
             public int OnlyShowAO;
             public int ThicknessStrength;
+            public int SampleRange;
+            public int SampleBias;
 
             public ShaderPropertyID()
             {
-
+                SampleCount = Shader.PropertyToID("_SampleCount");
+                OnlyShowAO = Shader.PropertyToID("_OnlyShowAO");
+                ThicknessStrength = Shader.PropertyToID("_ThicknessStrength");
+                SampleRange = Shader.PropertyToID("_SampleRange");
+                SampleBias = Shader.PropertyToID("_SampleBias");
             }
         }
         private const string PROFILER_TAG = "F-SSAO";
@@ -56,6 +66,8 @@ namespace FPostProcessing
             sheet.properties.SetInt(m_shaderPropertyID.SampleCount, settings.SampleCount);
             sheet.properties.SetInt(m_shaderPropertyID.OnlyShowAO,settings.OnlyShowAO == true ? 1: 0);
             sheet.properties.SetFloat(m_shaderPropertyID.ThicknessStrength,settings.ThicknessStrength);
+            sheet.properties.SetFloat(m_shaderPropertyID.SampleRange,settings.SampleRange);
+            sheet.properties.SetFloat(m_shaderPropertyID.SampleBias,settings.SampleBias);
             context.command.SetGlobalMatrix(Shader.PropertyToID("_InvProject"),GL.GetGPUProjectionMatrix(context.camera.projectionMatrix,false).inverse);
             context.command.SetGlobalMatrix(Shader.PropertyToID("_InvView"),context.camera.worldToCameraMatrix.inverse);
             context.command.BlitFullscreenTriangle(context.source, context.destination, sheet, 0);
